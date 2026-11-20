@@ -1,0 +1,52 @@
+name: Build TAIDEN Installer
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Versi rilis (contoh: v1.0.0)"
+        required: true
+        default: "v1.0.0"
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write   # perlu untuk membuat Release
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 120
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Pastikan Inno Setup terpasang
+        shell: pwsh
+        run: |
+          $paths = @("${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe", "$env:ProgramFiles\Inno Setup 6\ISCC.exe")
+          if (-not ($paths | Where-Object { Test-Path $_ })) {
+            choco install innosetup -y --no-progress
+          }
+
+      - name: Build installer (Python portable + library + model + Inno Setup)
+        shell: pwsh
+        run: ./build.ps1
+
+      - name: Cek hasil
+        shell: pwsh
+        run: |
+          if (-not (Test-Path dist/TAIDEN-Setup.exe)) { throw "TAIDEN-Setup.exe tidak ditemukan" }
+          "{0:N0} MB" -f ((Get-Item dist/TAIDEN-Setup.exe).Length / 1MB)
+
+      - name: Upload ke GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.event.inputs.tag || github.ref_name }}
+        run: |
+          gh release create $env:TAG dist/TAIDEN-Setup.exe `
+            --title "TAIDEN $env:TAG" `
+            --notes "Installer Windows. Unduh TAIDEN-Setup.exe, jalankan, Next sampai selesai." `
+            --repo $env:GITHUB_REPOSITORY
