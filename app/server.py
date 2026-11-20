@@ -903,7 +903,8 @@ async def api_shutdown(req):
 
 
 def page(name):
-    return lambda req: web.FileResponse(os.path.join(HERE, "static", name))
+    # no-store: browser tidak boleh memakai salinan lama halaman setelah aplikasi diperbarui
+    return lambda req: web.FileResponse(os.path.join(HERE, "static", name), headers={"Cache-Control": "no-store, max-age=0"})
 
 
 def setup_background():
