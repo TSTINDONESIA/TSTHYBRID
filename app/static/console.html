@@ -1,0 +1,524 @@
+<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>TAIDEN - Interpreter Console</title>
+<style>
+:root{--bg:#070b18;--panel:#0f1630;--panel2:#121b3a;--edge:#1e2a4f;--text:#e9eefc;--dim:#8a97bb;--blue:#3b6bff;--lcd1:#2347e0;--lcd2:#1a2fb4;--green:#35d05a;--red:#ff5560;--violet:#b45cff}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;color:var(--text);font:15px system-ui,-apple-system,"Segoe UI",sans-serif;padding:12px;display:flex;
+ background:radial-gradient(1200px 700px at 70% -10%,#16225a 0%,transparent 60%),var(--bg)}
+button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation;user-select:none;border:0;background:none;padding:0}
+.ic{width:1.2em;height:1.2em;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.app{display:grid;grid-template-columns:230px 1fr;gap:14px;width:100%;max-width:1600px;margin:0 auto}
+
+/* sidebar */
+.side{background:linear-gradient(180deg,#111a3b,#0b1230);border:1px solid var(--edge);border-radius:22px;padding:22px 14px 14px;display:flex;flex-direction:column;gap:6px}
+.brand{display:flex;align-items:center;gap:12px;padding:0 8px 26px;font-weight:600;font-size:14px;letter-spacing:.04em;line-height:1.35}
+.brand svg{width:34px;height:34px;color:#7b6bff}
+.brand span{color:#c3cbea;font-weight:500}
+.nav{display:flex;flex-direction:column;gap:6px}
+.nav button{display:flex;align-items:center;gap:14px;padding:15px 16px;border-radius:16px;color:#aab5d6;font-size:16px;text-align:left}
+.nav button .ic{width:24px;height:24px}
+.nav button:hover{background:#151f45}
+.nav button.on{color:#fff;background:linear-gradient(90deg,#1e3a9f,#17276e);box-shadow:inset 0 0 0 1px #3552c9,0 6px 18px #0a1450aa}
+.sysstat{margin-top:auto;background:#0d1431;border:1px solid var(--edge);border-radius:16px;padding:14px 16px;font-size:14px;color:#c3cbea}
+.sysstat div{display:flex;align-items:center;gap:10px;margin-top:8px;color:#fff;font-size:15px}
+
+/* main */
+.main{background:linear-gradient(180deg,#101835,#0b1229);border:1px solid var(--edge);border-radius:26px;padding:22px 26px 20px;min-width:0;display:flex;flex-direction:column;gap:16px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{margin:0;font-size:34px;letter-spacing:.04em;font-weight:700}
+.topr{display:flex;align-items:center;gap:26px}
+.chip{display:flex;align-items:center;gap:14px;background:#0b1128;border:1px solid var(--edge);border-radius:16px;padding:10px 12px 10px 20px;font-weight:500}
+.av{position:relative;width:40px;height:40px;border-radius:50%;background:#1a2a63;display:grid;place-items:center;color:#7fb2ff;border:1px solid #2b43a0}
+.av i{position:absolute;right:-2px;bottom:-1px;width:11px;height:11px;border-radius:50%;background:var(--green);border:2px solid #0b1128}
+.chip.ai .av{color:#d6a4ff;background:#2d1a5c;border-color:#5b34a8}.chip.ai .av i{background:var(--violet)}
+.clock{text-align:left}.clock b{display:block;font-size:20px;font-weight:600}.clock small{color:var(--dim);font-size:14px}
+
+.view{display:none;flex-direction:column;gap:16px;flex:1}
+.main[data-view=home] #v-home,.main[data-view=part] #v-part,.main[data-view=set] #v-set,.main[data-view=sys] #v-sys{display:flex}
+
+/* stage */
+.stage{background:#0c1330;border:1px solid var(--edge);border-radius:22px;padding:22px;display:grid;grid-template-columns:260px 1fr 66px;gap:22px;align-items:start}
+.spk{display:flex;flex-direction:column;align-items:center;gap:14px}
+.spkc{--lv:0;width:240px;height:240px;border-radius:50%;position:relative;
+ background:radial-gradient(circle at 50% 35%,#1a2348,#0c1230);border:7px solid #151d3d;
+ box-shadow:inset 0 0 0 1px #2a3664,0 10px 30px #040816,0 0 calc(var(--lv)*60px) calc(var(--lv)*10px) #2b5bff66}
+.spkc::before{content:"";position:absolute;inset:26px;border-radius:50%;
+ background:radial-gradient(circle,#05081a 1.7px,transparent 2.2px) 0 0/10px 10px;opacity:.95;
+ -webkit-mask:radial-gradient(circle,#000 98%,transparent 100%);mask:radial-gradient(circle,#000 98%,transparent 100%)}
+.leds{display:flex;justify-content:space-between;width:210px;margin-top:-6px}
+.led{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green)}
+.ctl{display:flex;gap:10px}
+.rb{width:50px;height:50px;border-radius:50%;background:#131c40;border:1px solid #27346a;display:grid;place-items:center;color:#9aa8d4}
+.rb:hover{background:#1a2650}.rb.on{color:#5ab0ff;border-color:#3b8bff;box-shadow:0 0 14px #2b6bff66}.rb.bad{color:var(--red);border-color:#7a2a3a}
+
+.out{background:#0e1533;border:1px solid var(--edge);border-radius:20px;padding:18px 22px 16px;min-width:0}
+.out h2{margin:0 0 12px;font-size:22px;font-weight:600}
+.outg{display:grid;grid-template-columns:1fr 150px;gap:0 14px;align-items:start}
+.lcd{display:grid;grid-template-columns:1fr 170px;background:linear-gradient(180deg,var(--lcd1),var(--lcd2));border:1px solid #4a6cf0;border-radius:14px;min-height:178px;
+ box-shadow:inset 0 0 40px #0a1a8a88,0 0 30px #1b3fcf44}
+.floor{padding:12px 8px 12px 14px;display:flex;flex-direction:column}
+.floor>em{font-style:normal;text-align:center;color:#9db4ff;font-size:15px;margin-bottom:12px}
+.fls{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;flex:1}
+.fl{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;border-radius:10px;padding:8px 2px;color:#dfe7ff;font-size:19px;font-weight:500}
+.fl b{font-weight:500;font-size:19px}.fl span{font-size:20px;letter-spacing:.03em}.fl small{font-size:11px;color:#a9bcff;font-weight:400;margin-top:-4px}
+.fl:hover{background:#ffffff14}.fl.sel{background:#ffffff26;box-shadow:inset 0 0 0 1px #9db4ffaa}
+.fl i{position:absolute;top:2px;right:4px;font-style:normal;font-size:10px;background:#0d1a73;border-radius:6px;padding:1px 5px;color:#cfdcff}
+.slotl{border-left:1px solid #5a78f0aa;padding:10px 0 8px 12px;display:flex;flex-direction:column;gap:3px}
+.slotl .h{background:#1428a8;text-align:center;padding:8px 4px;font-size:17px;border-radius:2px;margin-right:12px;margin-bottom:6px}
+.slotl button{display:block;text-align:center;font-size:16px;padding:7px;color:#e1e9ff;margin-right:12px;border-radius:8px}
+.slotl button:hover{background:#ffffff14}.slotl button.on{background:#ffffff28;box-shadow:inset 0 0 0 1px #9db4ffaa}
+.levers{display:flex;flex-direction:column;gap:12px;padding-top:2px}
+.lev{position:relative;display:flex;align-items:center;justify-content:flex-end;height:36px}
+.lev::before{content:"";position:absolute;left:-14px;right:30px;height:6px;border-radius:3px;background:#2b3a76;top:15px}
+.lev span{position:relative;width:78px;height:32px;border-radius:16px;background:linear-gradient(180deg,#3a4678,#27315c);border:1px solid #4a5a95;display:grid;place-items:center;font-size:11px;letter-spacing:.06em;color:#aebbe6;margin-right:0}
+.lev.on span{background:linear-gradient(180deg,#4a7bff,#2a54d8);border-color:#8fb0ff;color:#fff;box-shadow:0 0 14px #3b6bffaa}
+.keys{display:grid;grid-template-columns:1fr 170px;margin-top:0}
+.keys>div{display:grid;grid-template-columns:repeat(5,1fr);padding:0 8px 0 14px;gap:4px}
+.key{position:relative;margin:14px auto 0;width:58px;height:32px;border-radius:9px;background:linear-gradient(180deg,#27335f,#1b2547);border:1px solid #3a4a85;color:#8795c4}
+.key::before{content:"";position:absolute;left:50%;top:-14px;width:5px;height:14px;background:#2b3a76;transform:translateX(-50%)}
+.key::after{content:"";position:absolute;left:50%;top:50%;width:18px;height:3px;border-radius:2px;background:currentColor;transform:translate(-50%,-50%)}
+.key:hover{border-color:#6f8cf5}.key.sel{border-color:#8fb0ff;color:#cfe0ff;box-shadow:0 0 12px #3b6bff88}
+.keys .st{display:flex;justify-content:flex-end;align-items:flex-end;padding-left:12px}
+.eng{display:flex;align-items:center;gap:10px;background:#0b1128;border:1px solid #2a3664;border-radius:10px;padding:9px 16px;font-size:14px;letter-spacing:.05em;color:#dfe7ff;white-space:nowrap}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--dim);flex:none}
+.dot.g{background:var(--green);box-shadow:0 0 8px var(--green)}.dot.r{background:var(--red);box-shadow:0 0 8px var(--red)}.dot.v{background:var(--violet);box-shadow:0 0 8px var(--violet)}.dot.a{background:#f5b43a}
+
+.tools{background:#0e1533;border:1px solid var(--edge);border-radius:22px;padding:14px 10px;display:flex;flex-direction:column;gap:14px;align-items:center}
+.tb{width:48px;height:48px;border-radius:50%;background:linear-gradient(180deg,#e9eefc,#c9d3f0);color:#10183a;display:grid;place-items:center}
+.tb .ic{width:24px;height:24px;stroke-width:2.2}.tb:hover{filter:brightness(1.1)}.tb.on{box-shadow:0 0 0 3px #3b6bff}
+
+/* action cards */
+.acts{display:grid;grid-template-columns:1fr 1.45fr 1fr;gap:16px}
+.act{display:flex;align-items:center;gap:22px;border-radius:18px;padding:20px 26px;text-align:left;min-height:170px;min-width:0;border:1px solid}
+.act .circ{width:94px;height:94px;border-radius:50%;display:grid;place-items:center;flex:none;border:2px solid}
+.act .circ .ic{width:46px;height:46px;stroke-width:1.7}
+.act h3{margin:0 0 4px;font-size:22px;font-weight:600;letter-spacing:.02em;display:flex;align-items:center;gap:10px}
+.act p{margin:0;color:#b9c3e4;font-size:15px}
+.act.mute{background:linear-gradient(135deg,#3a1a2e,#2a1428);border-color:#5a2a40}.mute .circ{background:#4a1f2e;border-color:#c0394d;color:#ff6070}
+.act.mute.on{box-shadow:0 0 0 2px var(--red),0 0 24px #ff556055}
+.act.ptt{background:linear-gradient(135deg,#0f3a2c,#0c2c28);border-color:#1f6a4a}.ptt .circ{background:#123f2d;border-color:#2a9a58;color:#52e07a}
+.act.ptt.live{box-shadow:0 0 0 2px var(--red),0 0 30px #ff556066;background:linear-gradient(135deg,#5a1a26,#3a1220);border-color:#c0394d}
+.ptt.live .circ{background:#6a1f2e;border-color:#ff5560;color:#ff7080}
+.act.ai{background:linear-gradient(135deg,#2a1b52,#1d1544);border-color:#4a2f8c}.ai .circ{background:#331c66;border-color:#9a3fe0;color:#e08cff}
+.ai .circ b{font-size:38px;letter-spacing:.02em}
+.act.ai.on{box-shadow:0 0 0 2px var(--violet),0 0 24px #b45cff55}
+.act:disabled{opacity:.5;cursor:not-allowed}
+.act .cur{color:#fff;font-weight:600}
+.meter{display:flex;gap:4px;margin-bottom:12px}.meter i{flex:1;height:22px;border-radius:3px;background:#173a2a;max-width:18px}.meter i.l{background:#3fe060;box-shadow:0 0 6px #3fe06088}.meter i.h{background:#e8d84a}.meter i.x{background:#ff6a4a}
+.ptt .tx{flex:1;min-width:0}
+
+.logbar{background:#0c1330;border:1px solid var(--edge);border-radius:16px;padding:12px 18px;display:flex;flex-direction:column;gap:8px;min-height:84px}
+.ln{display:flex;gap:14px;align-items:center;color:#cfd8f5;font-size:15px;min-width:0}.ln>span:last-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tm{background:#101a3d;border:1px solid #1e2a55;color:#5b8cff;border-radius:8px;padding:3px 10px;font-size:14px;font-variant-numeric:tabular-nums;flex:none}
+
+/* other views */
+.orow{display:grid;grid-template-columns:70px 1fr 1fr auto;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--edge)}
+.orow b{font-size:18px}.orow small{color:var(--dim);display:block;font-weight:400;font-size:12px}
+.orow select,#v-set select{background:#131c40;color:var(--text);border:1px solid #27346a;border-radius:10px;padding:9px 10px;font:inherit;max-width:100%;min-width:0}
+.otop{display:flex;gap:18px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
+#omsg{white-space:pre-wrap;color:#9fe6b0;margin:12px 0 0;font-size:14px}#omsg.err{color:var(--red)}
+.fl em.rt{font-style:normal;font-size:10px;color:#9fe6b0;margin-top:-6px}
+@media(max-width:700px){.orow{grid-template-columns:1fr 1fr}}
+.card{background:#0e1533;border:1px solid var(--edge);border-radius:20px;padding:20px 22px}
+.card h2{margin:0 0 14px;font-size:20px;font-weight:600}
+.pgrid{display:grid;grid-template-columns:260px 1fr;gap:16px}
+.qr{background:#fff;border-radius:14px;padding:12px}.qr img{width:100%;display:block}
+.cnts{display:flex;flex-direction:column;gap:8px}.cnts div{display:flex;justify-content:space-between;background:#0b1128;border:1px solid var(--edge);border-radius:12px;padding:12px 16px}
+select{width:100%;padding:12px;background:#0b1128;color:var(--text);border:1px solid #2a3664;border-radius:12px;font:inherit}
+.row{display:flex;align-items:center;gap:14px;margin-top:14px;flex-wrap:wrap}
+.pill{background:#131c40;border:1px solid #27346a;border-radius:12px;padding:10px 18px}.pill:hover{background:#1a2650}
+#log{height:360px;overflow:auto;font:13px ui-monospace,Menlo,monospace;color:#b3bedf;display:flex;flex-direction:column;gap:6px}
+#log div{display:flex;gap:12px}#log .tm{font:12px ui-monospace,monospace;padding:1px 8px}#log span:last-child{white-space:pre-wrap}
+small.d{color:var(--dim)}
+
+.stage>*,.outg>*{min-width:0}
+@media(max-width:1180px){.stage{grid-template-columns:minmax(0,1fr)}.spk{flex-direction:row;flex-wrap:wrap;justify-content:center;gap:24px}.ctl{flex-wrap:wrap;justify-content:center}.tools{flex-direction:row;justify-content:center}.acts{grid-template-columns:1fr}}
+@media(max-width:900px){body{padding:8px}.app{grid-template-columns:1fr}.side{flex-direction:row;align-items:center;padding:10px;overflow-x:auto}.brand,.sysstat{display:none}
+ .nav{flex-direction:row}.nav button{padding:11px 14px;font-size:14px;gap:8px}.nav button .ic{width:20px;height:20px}.main{padding:16px}h1{font-size:26px}
+ .stage{padding:14px;gap:14px}.out{padding:14px}.outg{grid-template-columns:minmax(0,1fr)}.levers{flex-direction:row;justify-content:center}.lev::before{display:none}.keys{grid-template-columns:1fr}.keys .st{padding:10px 0 0}
+ .lcd{grid-template-columns:1fr}.slotl{border-left:0;border-top:1px solid #5a78f0aa;flex-direction:row;flex-wrap:wrap;padding:10px}.slotl .h{margin:0}.slotl button{margin:0}
+ .spkc{width:170px;height:170px}.leds{display:none}.pgrid{grid-template-columns:1fr}.topr{gap:14px}.fl span,.fl b{font-size:15px}.fl small{display:none}.act{padding:16px;gap:16px;min-height:130px}.act .circ{width:70px;height:70px}.act .circ .ic{width:34px;height:34px}}
+
+/* floor, relay, caption */
+.floorbar{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px 18px;align-items:center;background:#0c1330;border:1px solid var(--edge);border-radius:18px;padding:12px 16px}
+.fbtn{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#102a52,#0c1e3c);border:1px solid #2a4a8c;border-radius:14px;padding:10px 20px;text-align:left;min-width:190px}
+.fbtn b{display:flex;align-items:center;gap:8px;font-size:17px;letter-spacing:.06em}.fbtn small{display:block;color:#9db4e8;font-size:12px;margin-top:2px}
+.fbtn .ic{width:26px;height:26px}.fbtn:hover{filter:brightness(1.12)}
+.fbtn.on{box-shadow:0 0 0 2px var(--green),0 0 22px #35d05a44;background:linear-gradient(135deg,#0f3a2c,#0c2c28);border-color:#1f6a4a}
+.fmid{min-width:0;display:flex;flex-direction:column;gap:7px}
+.fm{display:flex;gap:3px}.fm i{flex:1;height:14px;border-radius:2px;background:#173a2a;max-width:18px}.fm i.l{background:#3fe060;box-shadow:0 0 6px #3fe06088}.fm i.h{background:#e8d84a}.fm i.x{background:#ff6a4a}
+.fmon{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--dim);white-space:nowrap}.fmon select{width:auto;min-width:150px;padding:8px 10px}
+.chips{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap}
+.chp{background:#101a3d;border:1px solid #1e2a55;border-radius:999px;padding:3px 12px;font-size:12px;color:#8fa0d0}.chp.on{color:#9fe6b0;border-color:#1f6a4a}
+.lbl{display:block;margin:12px 0 6px;color:var(--dim);font-size:13px}
+.fopt{display:none}.fopt.show{display:block}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.rrow{display:grid;grid-template-columns:90px 1fr;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--edge)}
+.rrow b{font-size:18px}.rrow small{color:var(--dim);display:block;font-weight:400;font-size:12px}
+.msg{white-space:pre-wrap;color:#9fe6b0;margin:12px 0 0;font-size:14px}.msg.err{color:var(--red)}
+@media(max-width:900px){.floorbar{grid-template-columns:1fr}.fmon{white-space:normal}.two{grid-template-columns:1fr}}
+</style></head><body>
+<svg width=0 height=0 style="position:absolute"><defs>
+<symbol id=i-home viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+<symbol id=i-users viewBox="0 0 24 24"><circle cx=9 cy=8 r=3.5 /><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><circle cx=17 cy=9 r=2.5 /><path d="M17 14c2.7 0 4.5 1.8 4.5 4.5"/></symbol>
+<symbol id=i-gear viewBox="0 0 24 24"><circle cx=12 cy=12 r=3 /><circle cx=12 cy=12 r=7.5 /><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/></symbol>
+<symbol id=i-shield viewBox="0 0 24 24"><path d="M12 3 4.5 6v5.5c0 4.6 3.1 8.2 7.5 9.5 4.4-1.3 7.5-4.9 7.5-9.5V6z"/><path d="M12 8.5v4.5M12 16.2v.1"/></symbol>
+<symbol id=i-power viewBox="0 0 24 24"><path d="M12 3v8M6.3 6.8a8 8 0 1 0 11.4 0"/></symbol>
+<symbol id=i-minus viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+<symbol id=i-plus viewBox="0 0 24 24"><path d="M5 12h14M12 5v14"/></symbol>
+<symbol id=i-vol-x viewBox="0 0 24 24"><path d="M4 9.5v5h3.5l4.5 4v-13l-4.5 4z"/><path d="m16 9.5 5 5M21 9.5l-5 5"/></symbol>
+<symbol id=i-user viewBox="0 0 24 24"><circle cx=12 cy=8 r=4 /><path d="M4 21c0-4.2 3.6-7 8-7s8 2.8 8 7"/></symbol>
+<symbol id=i-chat viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9.5h8M8 12.5h5"/></symbol>
+<symbol id=i-alert viewBox="0 0 24 24"><circle cx=12 cy=12 r=9 /><path d="M12 7.5v5.5M12 16.4v.1"/></symbol>
+<symbol id=i-mic viewBox="0 0 24 24"><rect x=9 y=3 width=6 height=11 rx=3 /><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></symbol>
+<symbol id=i-mic-off viewBox="0 0 24 24"><rect x=9 y=3 width=6 height=11 rx=3 /><path d="M5 11a7 7 0 0 0 14 0M12 18v3M3.5 3.5l17 17"/></symbol>
+<symbol id=i-wave viewBox="0 0 24 24"><path d="M4 12v.1M8 9v6M12 5v14M16 8v8M20 11v2"/></symbol>
+<symbol id=i-qr viewBox="0 0 24 24"><rect x=3 y=3 width=7 height=7 /><rect x=14 y=3 width=7 height=7 /><rect x=3 y=14 width=7 height=7 /><path d="M14 14h3v3h-3zM21 14v7h-4"/></symbol>
+<symbol id=i-floor viewBox="0 0 24 24"><rect x=9 y=3 width=6 height=11 rx=3 /><path d="M5 11a7 7 0 0 0 14 0M12 18v3M8 21h8"/></symbol>
+<symbol id=i-trash viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></symbol>
+</defs></svg>
+
+<div class=app>
+ <aside class=side>
+  <div class=brand><svg viewBox="0 0 40 40" fill=none stroke=currentColor stroke-width=3 stroke-linecap=round><path d="M6 20h3M13 12v16M20 6v28M27 13v14M34 18v4"/></svg><div>DIGITAL<br><span>CONFERENCE<br>SYSTEM</span></div></div>
+  <nav class=nav id=nav>
+   <button data-v=home class=on><svg class=ic><use href="#i-home"/></svg>Home</button>
+   <button data-v=part><svg class=ic><use href="#i-users"/></svg>Participants</button>
+   <button data-v=set><svg class=ic><use href="#i-gear"/></svg>Settings</button>
+   <button data-v=sys><svg class=ic><use href="#i-shield"/></svg>System</button>
+  </nav>
+  <div class=sysstat>System Status<div><i class="dot g" id=sdot></i><span id=stxt>Online</span></div></div>
+ </aside>
+
+ <main class=main id=main data-view=home>
+  <div class=top>
+   <h1>TAIDEN</h1>
+   <div class=topr>
+    <div class=chip id=modechip><span id=modetxt>Mode: HUMAN</span><div class=av><svg class=ic><use href="#i-user"/></svg><i></i></div></div>
+    <div class=clock><b id=clk>--:--:--</b><small id=dte></small></div>
+   </div>
+  </div>
+
+  <section class=view id=v-home>
+   <div class=stage>
+    <div class=spk>
+     <div class=spkc id=spk></div>
+     <div class=leds><i class=led></i><i class=led></i></div>
+     <div class=ctl>
+      <button class="rb on" id=pwr title="Power / Standby"><svg class=ic><use href="#i-power"/></svg></button>
+      <button class=rb id=gdn title="Gain mic -"><svg class=ic><use href="#i-minus"/></svg></button>
+      <button class=rb id=gup title="Gain mic +"><svg class=ic><use href="#i-plus"/></svg></button>
+      <button class=rb id=mute2 title="Mute"><svg class=ic><use href="#i-vol-x"/></svg></button>
+     </div>
+    </div>
+
+    <div class=out id=out>
+     <h2>Output</h2>
+     <div class=outg>
+      <div>
+       <div class=lcd>
+        <div class=floor><em>Channel</em><div class=fls id=floor></div></div>
+        <div class=slotl id=slotl></div>
+       </div>
+       <div class=keys><div id=keys></div><div class=st><div class=eng><i class=dot id=edot></i><span id=etxt>READY</span></div></div></div>
+      </div>
+      <div class=levers id=levers></div>
+     </div>
+    </div>
+
+    <div class=tools>
+     <button class=tb id=t-mic title="Pengaturan mic"><svg class=ic><use href="#i-user"/></svg></button>
+     <button class=tb id=t-qr title="Pendengar / QR"><svg class=ic><use href="#i-users"/></svg></button>
+     <button class=tb id=tone title="Tes nada ke output aktif"><svg class=ic><use href="#i-chat"/></svg></button>
+     <button class=tb id=clr title="Bersihkan log"><svg class=ic><use href="#i-alert"/></svg></button>
+    </div>
+   </div>
+
+   <div class=floorbar>
+    <button class=fbtn id=fbtn title="Floor ON/OFF - suara pembicara asli ke pendengar"><svg class=ic><use href="#i-floor"/></svg>
+     <div><b>FLOOR <i class=dot id=fdot></i></b><small id=ftxt>OFF</small></div></button>
+    <div class=fmid><div class=fm id=fm></div><small class=d id=fsrc>Sumber: -</small></div>
+    <div class=fmon><span>Dengarkan (pakai headphone)</span><select id=mon title="Pantau channel lewat headphone konsol, mis. untuk relay"></select></div>
+    <div class=chips id=chips></div>
+   </div>
+
+   <div class=acts>
+    <button class="act mute" id=mute><div class=circ><svg class=ic><use href="#i-mic-off"/></svg></div>
+     <div><h3>MUTE <i class=dot id=mdot></i></h3><p id=mtxt>Matikan Mikrofon</p></div></button>
+    <button class="act ptt" id=ptt><div class=circ><svg class=ic><use href="#i-mic"/></svg></div>
+     <div class=tx><div class=meter id=meter></div><h3 id=pttt>PUSH TO TALK</h3><p id=pttp>Tekan untuk berbicara <small class=d>(Spasi)</small></p></div></button>
+    <button class="act ai" id=ai><div class=circ><b>AI</b></div>
+     <div><h3>AI MODE <i class=dot id=adot></i></h3><p id=atxt>Human / AI</p></div></button>
+   </div>
+
+   <div class=logbar id=lb></div>
+  </section>
+
+  <section class=view id=v-part>
+   <div class=pgrid>
+    <div class=card><h2>Pendengar</h2><div class=qr><img src=/qr.svg alt="QR pendengar"></div><p><small class=d>Scan untuk mendengarkan</small></p></div>
+    <div class=card><h2>Jumlah pendengar per bahasa</h2><div class=cnts id=cnts></div></div>
+   </div>
+  </section>
+
+  <section class=view id=v-set>
+   <div class=card><h2>Mikrofon</h2><select id=mic></select>
+    <div class=row><span>Gain input: <b id=gv>1.00×</b></span><button class=pill id=g2dn>−</button><button class=pill id=g2up>+</button></div>
+    <p><small class=d>Jika meter tidak bergerak saat bicara, pilih mic lain di daftar ini.</small></p></div>
+   <div class=card style="margin-top:16px"><h2>Floor Input <small class=d>(suara pembicara / original)</small></h2>
+    <label class=lbl for=fsrcsel>Floor diambil dari</label>
+    <select id=fsrcsel>
+     <option value=mic>Mikrofon / Line-in (perangkat di komputer ini)</option>
+     <option value=soundcard>Soundcard / mixer (pilih device + nomor Input)</option>
+     <option value=display>Audio komputer / tab browser (Zoom, YouTube, dll.)</option>
+    </select>
+    <div class=fopt id=fo-mic><label class=lbl for=fdev>Perangkat input</label><select id=fdev></select></div>
+    <div class=fopt id=fo-soundcard><label class=lbl>Device dan nomor Input</label><div class=two><select id=fscdev></select><select id=fscch></select></div></div>
+    <div class=fopt id=fo-display><p><small class=d>Saat Floor ON, Chrome meminta memilih tab atau layar. Centang <b>Bagikan audio</b> (tab/sistem).</small></p></div>
+    <div class=row><span>Gain Floor: <b id=fgv>1.00×</b></span><button class=pill id=fgdn>−</button><button class=pill id=fgup>+</button><button class=pill id=fsave>Simpan &amp; terapkan</button></div>
+    <p><small class=d>Nyalakan lewat tombol <b>FLOOR</b> di Home. Pendengar memilih saluran <b>Floor</b> untuk mendengar suara asli.</small></p>
+    <pre class=msg id=fmsg></pre>
+   </div>
+   <div class=card style="margin-top:16px"><h2>Live Caption &amp; Relay</h2>
+    <label><input type=checkbox id=capen> Live caption: teks ucapan tampil di HP pendengar</label>
+    <p><small class=d id=capinfo></small></p>
+    <label class=lbl>Relay otomatis: channel mengambil sumber dari channel lain, tanpa penerjemah sendiri</label>
+    <div id=rrows></div>
+    <div class=row><button class=pill id=rsave>Simpan &amp; terapkan</button></div>
+    <pre class=msg id=rmsg></pre>
+   </div>
+   <div class=card style="margin-top:16px"><h2>Output Soundcard per Channel</h2>
+    <div class=otop>
+     <label><input type=checkbox id=oen> Aktifkan soundcard</label>
+     <label>Sample rate <select id=osr><option>44100</option><option>48000</option><option>96000</option></select></label>
+    </div>
+    <p><small class=d>Pilih device (mis. USB codec) dan nomor Output untuk tiap bahasa. Klik Simpan dulu, baru Tes bunyi.</small></p>
+    <div id=orows></div>
+    <div class=row><button class=pill id=osave>Simpan &amp; terapkan</button></div>
+    <pre id=omsg></pre>
+   </div>
+
+  </section>
+
+  <section class=view id=v-sys>
+   <div class=card><h2>Log sistem</h2><div id=log></div></div>
+  </section>
+ </main>
+</div>
+
+<script>
+const L=["ENG","IND","CHI","ARA","JPN"],LN={ENG:"English",IND:"Indonesian",CHI:"Mandarin",ARA:"Arabic",JPN:"Japanese"},$=id=>document.getElementById(id);
+LN.FLR="Floor (Original)";const LA=["FLR",...L];
+let peak=0,slots=["ENG","CHI"],slot=0,ai=false,muted=false,power=true,gain=1,live=false,latch=false,cnt={},ac,lvl=0,buf=[],len=0,sil=0,had=false,logs=[];
+const SEG=14;$("meter").innerHTML="<i></i>".repeat(SEG);const segs=[...$("meter").children];
+const ws=new WebSocket((location.protocol=="https:"?"wss://":"ws://")+location.host+"/ws/console");
+ws.onopen=()=>stat();
+ws.onmessage=e=>{const d=JSON.parse(e.data);if(d.type=="counts"){cnt=d.data;draw()}else if(d.type=="floor")fmeter(d.lv);else log(d.text)};
+ws.onclose=()=>{log("Terputus dari server");stat()};
+const hms=()=>new Date().toLocaleTimeString("en-GB");
+function log(t){logs.push({t:hms(),x:t});if(logs.length>300)logs.shift();renderLog()}
+function renderLog(){
+ $("lb").innerHTML=logs.slice(-2).map(l=>`<div class=ln><span class=tm>${l.t}</span><span>${esc(l.x).replace(/\n/g," · ")}</span></div>`).join("");
+ const o=$("log");o.innerHTML=logs.map(l=>`<div><span class=tm>${l.t}</span><span>${esc(l.x)}</span></div>`).join("");o.scrollTop=o.scrollHeight}
+const esc=s=>String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+function stat(){const on=ws.readyState==1&&power;$("sdot").className="dot "+(ws.readyState!=1?"r":power?"g":"a");$("stxt").textContent=ws.readyState!=1?"Offline":power?"Online":"Standby"}
+function tick(){const d=new Date();$("clk").textContent=d.toLocaleTimeString("en-GB");$("dte").textContent=d.toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}
+setInterval(tick,1000);tick();
+
+function draw(){
+ const sel=c=>slot<2&&slots[slot]==c?"sel":"";
+ $("floor").innerHTML=L.map((c,i)=>{const s=slots.indexOf(c);return `<button class="fl ${sel(c)}" data-c=${c} title="${LN[c]}"><b>${i+1}</b><span>${c}</span><small>${cnt[c]||0} pendengar</small>${rtTxt(c)?`<em class=rt>${rtTxt(c)}</em>`:""}${s>=0?`<i>S${s+1}</i>`:""}</button>`}).join("");
+ $("keys").innerHTML=L.map(c=>`<button class="key ${sel(c)}" data-c=${c} title="${LN[c]}"></button>`).join("");
+ $("slotl").innerHTML=`<div class=h>Slot Aktif</div>`+[0,1].map(i=>`<button data-s=${i} class="${slot==i?"on":""}">${i+1} ${slots[i]}</button>`).join("")+`<button data-s=2 class="${slot==2?"on":""}">OFF</button>`;
+ $("levers").innerHTML=["SLOT 1","SLOT 2","OFF"].map((s,i)=>`<button class="lev ${slot==i?"on":""}" data-s=${i}><span>${s}</span></button>`).join("");
+ $("cnts").innerHTML=LA.map(c=>`<div><span>${c} · ${LN[c]}</span><b>${cnt[c]||0}</b></div>`).join("");
+ $("modetxt").textContent="Mode: "+(ai?"AI":"HUMAN");$("modechip").className="chip"+(ai?" ai":"");
+ $("ai").className="act ai"+(ai?" on":"");$("adot").className="dot"+(ai?" v":"");
+ $("atxt").innerHTML=`<span class="${ai?"":"cur"}">Human</span> / <span class="${ai?"cur":""}">AI</span>`;
+ $("mute").className="act mute"+(muted?" on":"");$("mdot").className="dot"+(muted?" r":"");$("mtxt").textContent=muted?"Mikrofon dimatikan":"Matikan Mikrofon";
+ $("mute2").className="rb"+(muted?" bad":"");$("pwr").className="rb"+(power?" on":"");
+ $("ptt").className="act ptt"+(live?" live":"");$("ptt").disabled=!power;
+ $("pttt").textContent=live?"MIKROFON ON":"PUSH TO TALK";$("pttp").innerHTML=live?"Tekan lagi untuk berhenti <small class=d>(Spasi)</small>":"Tekan untuk berbicara <small class=d>(Spasi)</small>";
+ $("edot").className="dot "+(!power?"a":live?"g":muted?"r":"");$("etxt").textContent=!power?"STANDBY":live?"ENGAGED":muted?"MUTED":"READY";
+ floorUI();stat()}
+function outLog(){log(slot<2?"Output: Slot "+(slot+1)+" ("+LN[slots[slot]].toUpperCase()+")":"Output: OFF")}
+$("out").onclick=e=>{
+ const c=e.target.closest("[data-c]")?.dataset.c,s=e.target.closest("[data-s]")?.dataset.s;
+ if(c){if(slot<2){slots[slot]=c;outLog();draw()}}
+ else if(s!=null){slot=+s;outLog();draw()}};
+
+/* navigasi */
+function view(v){$("main").dataset.view=v;[...$("nav").children].forEach(b=>b.classList.toggle("on",b.dataset.v==v))}
+$("nav").onclick=e=>{const v=e.target.closest("[data-v]")?.dataset.v;if(v)view(v)};
+$("t-mic").onclick=()=>view("set");$("t-qr").onclick=()=>view("part");
+$("clr").onclick=()=>{logs=[];renderLog()};
+
+/* mic */
+let stream,node;
+async function mic(id){try{stream?.getTracks().forEach(t=>t.stop());node?.disconnect();
+ stream=await navigator.mediaDevices.getUserMedia({audio:{deviceId:id?{exact:id}:undefined,echoCancellation:false,noiseSuppression:false}});
+ ac=ac||new AudioContext();node=ac.createScriptProcessor(2048,1,1);ac.createMediaStreamSource(stream).connect(node);node.connect(ac.destination);
+ node.onaudioprocess=e=>feed(e.inputBuffer.getChannelData(0));
+ const t=stream.getAudioTracks()[0],d=(await navigator.mediaDevices.enumerateDevices()).filter(x=>x.kind=="audioinput");
+ $("mic").innerHTML=d.map(x=>`<option value="${x.deviceId}">${x.label||"Mic"}</option>`).join("");
+ $("mic").value=t.getSettings().deviceId;log("Mic siap: "+t.label);fillMic()}
+ catch(e){log("ERROR mic: "+e.message+" (buka lewat localhost atau HTTPS)")}}
+function down(x,g=gain){const r=ac.sampleRate/16000,n=Math.floor(x.length/r),o=new Int16Array(n);
+ for(let i=0;i<n;i++){const a=Math.floor(i*r),b=Math.max(a+1,Math.floor((i+1)*r));let s=0;for(let j=a;j<b;j++)s+=x[j];o[i]=Math.max(-1,Math.min(1,g*s/(b-a)))*32767}return o}
+function send(m,ch,pcm){const u=new Uint8Array(4+pcm.byteLength);u.set(new TextEncoder().encode(m+ch));u.set(new Uint8Array(pcm.buffer),4);ws.send(u)}
+let lastM=-1;
+function meter(v){const n=Math.round(Math.min(1,v*6)*SEG);if(n==lastM)return;lastM=n;
+ segs.forEach((s,i)=>s.className=i<n?(i>=SEG-2?"x":i>=SEG-5?"h":"l"):"")}
+function feed(x){let s=0;for(const v of x)s+=v*v;lvl=Math.sqrt(s/x.length)*gain;meter(lvl);$("spk").style.setProperty("--lv",Math.min(1,lvl*6).toFixed(2));
+ if(live)peak=Math.max(peak,lvl);if(!live)return;const p=down(x),ch=slots[slot];if(!ai)return send("H",ch,p);
+ buf.push(p);len+=p.length;if(lvl>.012){had=true;sil=0}else sil+=p.length;const d=len/16000;
+ if(had&&((sil/16000>=.45&&d>=.8)||d>=5))cut();else if(!had&&d>1){buf=[];len=0;sil=0}}
+function cut(){if(!buf.length)return;const a=new Int16Array(len);let o=0;for(const b of buf){a.set(b,o);o+=b.length}
+ send("A",slots[slot],a);buf=[];len=0;sil=0;had=false}
+function start(){if(live||muted||!power||slot==2||!ac||ws.readyState!=1)return;ac.resume();buf=[];len=0;sil=0;had=false;live=true;peak=0;setTimeout(()=>{if(live&&peak<.003)log("PERINGATAN: mic tidak menangkap suara. Pilih mic lain di Settings.")},2000);log("PUSH → "+slots[slot]+(ai?" (AI)":""));draw()}
+function stop(){if(!live)return;if(ai&&had)cut();live=false;buf=[];len=0;had=false;log("PUSH selesai");draw()}
+const togglePtt=()=>live?stop():start();
+$("ptt").onclick=togglePtt;
+onkeydown=e=>{if(e.code=="Space"&&!/SELECT|INPUT/.test(e.target.tagName)){e.preventDefault();if(!e.repeat)togglePtt()}};
+$("ai").onclick=()=>{stop(true);ai=!ai;log("Mode: "+(ai?"AI":"HUMAN"));draw()};
+const toggleMute=()=>{muted=!muted;if(muted)stop(true);log(muted?"Mikrofon: MUTE":"Mikrofon: aktif");draw()};
+$("mute").onclick=toggleMute;$("mute2").onclick=toggleMute;
+$("pwr").onclick=()=>{power=!power;if(!power){stop(true);if(fOn)floorToggle()}log(power?"Sistem: aktif":"Sistem: standby");draw()};
+function setGain(d){gain=Math.max(.25,Math.min(3,+(gain+d).toFixed(2)));$("gv").textContent=gain.toFixed(2)+"×";log("Gain mic: "+gain.toFixed(2)+"×")}
+$("gdn").onclick=$("g2dn").onclick=()=>setGain(-.25);$("gup").onclick=$("g2up").onclick=()=>setGain(.25);
+$("tone").onclick=()=>{if(slot==2||ws.readyState!=1)return;const ch=slots[slot];let k=0;log("TES NADA → "+ch+" ("+(cnt[ch]||0)+" pendengar)");
+ const iv=setInterval(()=>{const o=new Int16Array(3200);for(let i=0;i<3200;i++)o[i]=Math.sin(2*Math.PI*440*(k*3200+i)/16000)*9000;send("H",ch,o);if(++k>=10)clearInterval(iv)},200)};
+$("mic").onchange=e=>mic(e.target.value);
+
+/* output soundcard per bahasa */
+let OD=null;
+function routeTxt(c){const o=OD&&OD.active.includes(c)?(OD.config.outputs||{})[c]:null;return o?`Dev ${o.device} · Out ${o.channel+1}`:""}
+async function outLoad(){
+ try{OD=await (await fetch("/api/output")).json()}catch(e){$("omsg").textContent="Gagal memuat daftar device: "+e.message;$("omsg").className="err";return}
+ $("oen").checked=!!OD.config.enabled;$("osr").value=String(OD.config.samplerate||48000);$("orows").innerHTML="";
+ for(const k of LA){const c=(OD.config.outputs||{})[k]||{};
+  const row=document.createElement("div");row.className="orow";
+  row.innerHTML=`<div><b>${k}</b><small>${LN[k]}</small></div>`;
+  const ds=document.createElement("select");ds.id="od"+k;ds.add(new Option("- tidak dipakai -",""));
+  OD.devices.forEach(d=>ds.add(new Option(d.id+": "+d.name+" ("+d.out+" out)",d.id)));
+  if(c.device!=null)ds.value=String(c.device);
+  const cs=document.createElement("select");cs.id="oc"+k;
+  const fill=()=>{const d=OD.devices.find(x=>String(x.id)===ds.value);cs.innerHTML="";const n=d?d.out:0;
+   for(let i=0;i<n;i++)cs.add(new Option("Output "+(i+1)+(n===2?(i?" (kanan)":" (kiri)"):""),i));
+   if(c.channel!=null&&c.channel<n)cs.value=String(c.channel)};
+  ds.onchange=()=>{c.channel=0;fill()};fill();
+  const t=document.createElement("button");t.className="pill";t.textContent="Tes bunyi";
+  t.onclick=async()=>{const r=await (await fetch("/api/output/test",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({ch:k})})).json();
+   $("omsg").className="";$("omsg").textContent=r.ok?"Nada tes dikirim ke "+k+" ("+routeTxt(k)+")":"Output "+k+" belum aktif. Klik Simpan & terapkan dulu."};
+  row.append(ds,cs,t);$("orows").append(row)}
+ showOut()}
+function showOut(){const m=$("omsg");
+ m.className=OD.errors&&OD.errors.length?"err":"";
+ m.textContent=(OD.active.length?"Aktif: "+OD.active.map(c=>c+" → "+routeTxt(c)).join(", "):"Belum ada soundcard aktif.")+(OD.errors&&OD.errors.length?"\nGAGAL:\n"+OD.errors.join("\n"):"");
+ draw()}
+$("osave").onclick=async()=>{const outputs={};
+ for(const k of LA){const v=$("od"+k).value;if(v!=="")outputs[k]={device:+v,channel:+$("oc"+k).value}}
+ const r=await (await fetch("/api/output",{method:"POST",headers:{"Content-Type":"application/json"},
+  body:JSON.stringify({enabled:$("oen").checked,samplerate:+$("osr").value,outputs})})).json();
+ OD.config={enabled:$("oen").checked,samplerate:+$("osr").value,outputs};OD.active=r.active;OD.errors=r.errors;showOut();log("Output soundcard: "+(r.active.length?r.active.join(", "):"nonaktif"))};
+
+/* ===== Floor, relay, caption ===== */
+const ls={get(k,d){try{const v=localStorage.getItem("taiden_"+k);return v==null?d:JSON.parse(v)}catch(_){return d}},set(k,v){try{localStorage.setItem("taiden_"+k,JSON.stringify(v))}catch(_){}}};
+let ST=null,fOn=false,fdevId=ls.get("fdev",null),FS={src:"mic",device:null,channel:0,gain:1},fstream=null,fnode=null,fmLast=-1,mws=null,mnx=0;
+const FSEG=16;$("fm").innerHTML="<i></i>".repeat(FSEG);const fsegs=[...$("fm").children];
+const rtTxt=c=>[ST&&ST.route[c]?"⇄ "+ST.route[c]:"",routeTxt(c)].filter(Boolean).join(" · ");
+function fmeter(v){const n=Math.round(Math.min(1,v*6)*FSEG);if(n==fmLast)return;fmLast=n;fsegs.forEach((s,i)=>s.className=i<n?(i>=FSEG-2?"x":i>=FSEG-5?"h":"l"):"")}
+function srcName(){
+ if(FS.src=="soundcard")return FS.device==null?"Soundcard (belum dipilih)":"Soundcard: device "+FS.device+" · Input "+(FS.channel+1);
+ if(FS.src=="display")return "Audio komputer / tab";
+ const o=$("fdev").selectedOptions[0];return "Mikrofon: "+(o?o.text:"default")}
+function floorUI(){
+ $("fbtn").className="fbtn"+(fOn?" on":"");$("fdot").className="dot"+(fOn?" g":"");
+ $("ftxt").textContent=fOn?"LIVE ke pendengar":"OFF";$("fsrc").textContent=srcName()+(ST&&ST.floor_err?"  ·  ERROR: "+ST.floor_err:"");
+ const r=ST?Object.entries(ST.route):[];
+ $("chips").innerHTML=`<span class="chp ${ST&&ST.captions?"on":""}">Caption ${ST&&ST.captions?"ON":"OFF"}</span>`+
+  (r.length?r.map(([k,v])=>`<span class="chp on">${k} ⇄ ${v==="FLR"?"Floor":v}</span>`).join(""):`<span class="chp">Relay: tidak ada</span>`)}
+async function floorStart(){
+ if(FS.src=="soundcard"){if(FS.device==null){log("Floor: pilih device soundcard di Settings dulu");return false}return true}
+ try{
+  ac=ac||new AudioContext();await ac.resume();
+  const q={echoCancellation:false,noiseSuppression:false,autoGainControl:false};
+  fstream=FS.src=="display"?await navigator.mediaDevices.getDisplayMedia({video:true,audio:q})
+   :await navigator.mediaDevices.getUserMedia({audio:{...q,deviceId:fdevId?{exact:fdevId}:undefined}});
+  const at=fstream.getAudioTracks();
+  if(!at.length){floorStop();log("Floor: tidak ada audio. Centang \"Bagikan audio\" saat memilih tab/layar.");return false}
+  fnode=ac.createScriptProcessor(2048,1,1);ac.createMediaStreamSource(new MediaStream(at)).connect(fnode);fnode.connect(ac.destination);
+  fnode.onaudioprocess=e=>floorFeed(e.inputBuffer.getChannelData(0));
+  at[0].onended=()=>{if(fOn)floorToggle()};
+  return true}catch(e){floorStop();log("ERROR floor: "+e.message);return false}}
+function floorStop(){fstream?.getTracks().forEach(t=>t.stop());fnode?.disconnect();fstream=fnode=null}
+function floorFeed(x){let s=0;for(const v of x)s+=v*v;fmeter(Math.sqrt(s/x.length)*FS.gain);
+ if(fOn&&FS.src!="soundcard"&&ws.readyState==1)send("H","FLR",down(x,FS.gain))}
+const fsend=on=>{if(ws.readyState==1)ws.send(JSON.stringify({type:"floor",on}))};
+async function floorToggle(){
+ if(!fOn){if(!power||ws.readyState!=1){log("Floor: sistem standby/offline");return}if(!(await floorStart()))return;fOn=true;fsend(true);log("Floor: ON ("+srcName()+")")}
+ else{fOn=false;fsend(false);floorStop();fmeter(0);log("Floor: OFF")}
+ draw()}
+$("fbtn").onclick=floorToggle;
+ws.addEventListener("open",()=>fsend(fOn));
+// pantau channel lewat headphone konsol (untuk relay manual oleh penerjemah manusia)
+$("mon").innerHTML=`<option value="">Mati</option>`+LA.map(c=>`<option value=${c}>${c} · ${LN[c]}</option>`).join("");
+$("mon").onchange=e=>monitor(e.target.value);
+function monitor(c){
+ if(mws){mws.onclose=null;mws.close();mws=null}
+ if(!c){log("Monitor: mati");return}
+ ac=ac||new AudioContext();ac.resume();mnx=0;
+ mws=new WebSocket((location.protocol=="https:"?"wss://":"ws://")+location.host+"/ws/listen?mon=1&ch="+c);mws.binaryType="arraybuffer";
+ mws.onopen=()=>log("Monitor: mendengarkan "+c+" di headphone konsol");
+ mws.onclose=()=>setTimeout(()=>$("mon").value==c&&monitor(c),1500);
+ mws.onmessage=e=>{if(typeof e.data=="string")return;const p=new Int16Array(e.data),f=new Float32Array(p.length);for(let i=0;i<p.length;i++)f[i]=p[i]/32768;
+  const b=ac.createBuffer(1,f.length,16000);b.copyToChannel(f,0);const s=ac.createBufferSource();s.buffer=b;s.connect(ac.destination);
+  const t=ac.currentTime;if(mnx<t)mnx=t+.12;s.start(mnx);mnx+=b.duration}}
+
+// ---- pengaturan ----
+const fmsg=(t,err)=>{$("fmsg").textContent=t;$("fmsg").className="msg"+(err?" err":"")};
+const rmsg=(t,err)=>{$("rmsg").textContent=t;$("rmsg").className="msg"+(err?" err":"")};
+async function fillMic(){
+ try{const d=(await navigator.mediaDevices.enumerateDevices()).filter(x=>x.kind=="audioinput"),sel=$("fdev");sel.innerHTML="";
+  d.forEach(x=>sel.add(new Option(x.label||"Input "+(sel.length+1),x.deviceId)));
+  if(fdevId&&d.some(x=>x.deviceId==fdevId))sel.value=fdevId;else fdevId=sel.value||null;floorUI()}catch(_){}}
+$("fdev").onchange=e=>{fdevId=e.target.value;ls.set("fdev",fdevId);floorUI()};
+function optShow(){["mic","soundcard","display"].forEach(k=>$("fo-"+k).classList.toggle("show",$("fsrcsel").value==k))}
+function fillCh(){const d=ST&&ST.inputs.find(x=>String(x.id)===$("fscdev").value),cs=$("fscch");cs.innerHTML="";
+ for(let i=0;i<(d?d.in:0);i++)cs.add(new Option("Input "+(i+1)+(d.in===2?(i?" (kanan)":" (kiri)"):""),i));
+ if(d&&FS.channel<d.in)cs.value=String(FS.channel)}
+$("fsrcsel").onchange=optShow;$("fscdev").onchange=()=>{FS.channel=0;fillCh()};
+const setGainF=d=>{FS.gain=Math.max(.25,Math.min(4,+(FS.gain+d).toFixed(2)));$("fgv").textContent=FS.gain.toFixed(2)+"×";fmsg(FS.src=="soundcard"?"Klik Simpan & terapkan agar gain dipakai soundcard.":"")};
+$("fgdn").onclick=()=>setGainF(-.25);$("fgup").onclick=()=>setGainF(.25);
+async function post(body){const r=await fetch("/api/settings",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});return r.json()}
+$("fsave").onclick=async()=>{
+ const src=$("fsrcsel").value,dev=$("fscdev").value;
+ if(src=="soundcard"&&dev===""){fmsg("Pilih device soundcard dulu.",1);return}
+ if(fOn)await floorToggle();
+ const j=await post({floor:{source:src,device:dev===""?null:+dev,channel:+$("fscch").value||0,gain:FS.gain}});
+ ST.floor=j.floor;ST.floor_err=j.floor_err;ST.floor_active=j.floor_active;FS={src:j.floor.source,device:j.floor.device,channel:j.floor.channel,gain:j.floor.gain};
+ fmsg(j.floor_err?"GAGAL: "+j.floor_err:"Tersimpan. Sumber Floor: "+srcName()+". Tekan tombol FLOOR di Home untuk mulai.",!!j.floor_err);
+ log("Floor sumber: "+srcName());floorUI()};
+function relayRows(){
+ $("rrows").innerHTML=L.map(k=>`<div class=rrow><div><b>${k}</b><small>${LN[k]}</small></div><select id=rs${k}><option value="">Manual (tanpa relay)</option><option value=FLR>Otomatis dari Floor (original)</option>${L.filter(x=>x!=k).map(x=>`<option value=${x}>Relay dari ${x} · ${LN[x]}</option>`).join("")}</select></div>`).join("");
+ L.forEach(k=>$("rs"+k).value=ST.route[k]||"")}
+$("rsave").onclick=async()=>{
+ const route={};L.forEach(k=>{const v=$("rs"+k).value;if(v)route[k]=v});
+ const j=await post({route,captions:$("capen").checked});
+ if(!j.ok){rmsg(j.error||"Gagal menyimpan",1);return}
+ ST.route=j.route;ST.captions=j.captions;rmsg("Tersimpan. "+(Object.keys(j.route).length?"Relay aktif: "+Object.entries(j.route).map(([k,v])=>k+" ← "+v).join(", "):"Tidak ada relay.")+(j.captions?"":" Caption OFF."));
+ log("Relay: "+(Object.keys(j.route).length?Object.entries(j.route).map(([k,v])=>k+"←"+v).join(", "):"tidak ada")+" · Caption "+(j.captions?"ON":"OFF"));draw()};
+async function setLoad(){
+ try{ST=await (await fetch("/api/settings")).json()}catch(e){fmsg("Gagal memuat pengaturan: "+e.message,1);return}
+ FS={src:ST.floor.source,device:ST.floor.device,channel:ST.floor.channel,gain:ST.floor.gain};
+ $("fsrcsel").value=FS.src;$("fgv").textContent=FS.gain.toFixed(2)+"×";
+ const sc=$("fscdev");sc.innerHTML="";sc.add(new Option("- pilih device -",""));ST.inputs.forEach(d=>sc.add(new Option(d.id+": "+d.name+" ("+d.in+" in)",d.id)));
+ if(FS.device!=null)sc.value=String(FS.device);fillCh();optShow();fillMic();
+ $("capen").checked=!!ST.captions;relayRows();
+ $("capinfo").textContent=ST.mode=="local"?"Mode OFFLINE (Whisper): caption semua bahasa. Relay/terjemahan hanya Indonesia ↔ English; untuk Mandarin/Arab/Jepang pakai mode Gemini (settings.env)."
+  :"Mode ONLINE ("+ST.mode+"): caption dan relay untuk semua bahasa.";
+ if(ST.floor_err)fmsg("Floor soundcard GAGAL: "+ST.floor_err,1);
+ draw()}
+setLoad();
+outLoad();if(location.hash=="#set")view("set");
+log("Output: Slot 1 ("+LN[slots[0]].toUpperCase()+")");log("Mode: HUMAN");draw();mic();
+</script></body></html>

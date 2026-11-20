@@ -1,0 +1,7 @@
+{
+  "soundcard": {
+    "enabled": false,
+    "samplerate": 48000,
+    "outputs": {}
+  }
+}

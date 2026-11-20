@@ -1,0 +1,29 @@
+TAIDEN INTERPRETER - PROYEK LENGKAP (build lewat GitHub)
+
+CARA MEMBUAT TAIDEN-Setup.exe (lewat GitHub, tanpa instal apa pun di laptop Anda)
+1. Buat repo baru di GitHub, lalu upload SEMUA isi folder ini (termasuk folder .github).
+   Pastikan build.ps1, TAIDEN.iss, folder app dan folder .github ada di tingkat paling atas repo.
+2. Buka tab Actions -> "Build TAIDEN Installer" -> Run workflow -> isi versi (mis. v1.0.0).
+   Jika tab Actions kosong, buka Settings -> Actions -> General -> pilih "Allow all actions".
+3. Tunggu 30-60 menit. Hasil: tab Releases -> TAIDEN-Setup.exe (sekitar 1-2 GB).
+   Tiap build butuh nomor versi baru.
+
+CARA MEMBUAT SECARA LOKAL (alternatif): pasang Inno Setup 6, klik dua kali BUILD.bat.
+
+CARA PAKAI DI LAPTOP LAIN
+- Salin TAIDEN-Setup.exe, klik dua kali, Next sampai selesai. Tidak perlu internet, Python, atau instal lain.
+- Buka lewat ikon "TAIDEN Interpreter" (otomatis membuka http://localhost:8000/console).
+- Settings -> Output Soundcard per Channel: pilih USB codec & nomor Output tiap channel, lalu Simpan.
+  (Nomor device tiap laptop berbeda, jadi atur sekali di laptop baru.)
+- Pendengar scan QR di Participants. Saat Windows Firewall bertanya, pilih Izinkan (Private network).
+- Ganti mode/bahasa/kunci Gemini: Start Menu -> TAIDEN -> "Pengaturan AI (settings.env)".
+
+FITUR
+- FLOOR: suara pembicara asli. Settings -> Floor Input -> pilih sumber (Mikrofon/Line-in, Soundcard+nomor Input,
+  atau Audio komputer/tab). Nyalakan dengan tombol FLOOR di Home. Pendengar pilih saluran "Floor".
+- LIVE CAPTION: teks ucapan tampil di HP pendengar (Floor, penerjemah manusia, dan mode AI).
+- RELAY: Settings -> Live Caption & Relay. Channel bisa otomatis mengikuti Floor atau channel lain
+  (mis. ENG -> CHI, ARA, JPN). Penerjemah manusia bisa memantau channel lewat kotak "Dengarkan" (pakai headphone).
+- Mode offline: terjemahan hanya Indonesia <-> English. Mandarin/Arab/Jepang butuh mode Gemini (settings.env).
+
+Catatan: update aplikasi cukup build ulang & jalankan installer baru; config.json dan settings.env tidak ditimpa.

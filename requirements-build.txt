@@ -1,0 +1,9 @@
+aiohttp
+numpy
+openai
+qrcode
+sounddevice
+faster-whisper
+argostranslate
+pyttsx3
+pywin32
