@@ -12,7 +12,11 @@ CARA MEMBUAT SECARA LOKAL (alternatif): pasang Inno Setup 6, klik dua kali BUILD
 
 CARA PAKAI DI LAPTOP LAIN
 - Salin TAIDEN-Setup.exe, klik dua kali, Next sampai selesai. Tidak perlu internet, Python, atau instal lain.
-- Buka lewat ikon "TAIDEN Interpreter" (otomatis membuka http://localhost:8000/console).
+- Buka lewat ikon "TAIDEN Interpreter": server jalan DI LATAR BELAKANG (tanpa jendela hitam) dan browser otomatis membuka
+  http://localhost:8000/console. Menutup tab browser tidak menghentikan server; jika server crash, ia menyala ulang sendiri.
+  Hentikan lewat Start Menu -> TAIDEN -> "Hentikan TAIDEN" (atau Console -> System -> Hentikan server).
+  Mode jendela/debug: Start Menu -> "TAIDEN (tampilkan jendela)". Log: "Log TAIDEN" (app\taiden.log).
+  Opsional saat install: centang "Jalankan otomatis saat Windows login".
 - Settings -> Output Soundcard per Channel: pilih USB codec & nomor Output tiap channel, lalu Simpan.
   (Nomor device tiap laptop berbeda, jadi atur sekali di laptop baru.)
 - Pendengar scan QR di Participants. Saat Windows Firewall bertanya, pilih Izinkan (Private network).
@@ -22,8 +26,21 @@ FITUR
 - FLOOR: suara pembicara asli. Settings -> Floor Input -> pilih sumber (Mikrofon/Line-in, Soundcard+nomor Input,
   atau Audio komputer/tab). Nyalakan dengan tombol FLOOR di Home. Pendengar pilih saluran "Floor".
 - LIVE CAPTION: teks ucapan tampil di HP pendengar (Floor, penerjemah manusia, dan mode AI).
-- RELAY: Settings -> Live Caption & Relay. Channel bisa otomatis mengikuti Floor atau channel lain
-  (mis. ENG -> CHI, ARA, JPN). Penerjemah manusia bisa memantau channel lewat kotak "Dengarkan" (pakai headphone).
-- Mode offline: terjemahan hanya Indonesia <-> English. Mandarin/Arab/Jepang butuh mode Gemini (settings.env).
+- BOOTH & AUTO RELAY: Settings -> Booth & Auto Relay. Tiap booth = pasangan sumber -> tujuan, mode Auto (AI relay) atau
+  Manual (interpreter manusia). Contoh bawaan: Booth 1 Floor(English)->Indonesia, Booth 2 ->Arab, Booth 3 ->Vietnam.
+  Tambah/ubah/hapus booth kapan saja lalu Simpan. Bahasa tersedia: ENG IND CHI ARA JPN VIE KOR THA MAL FRA SPA GER RUS HIN.
+  Bahasa pembicara Floor dipilih di Settings -> Floor Input. Bila interpreter manusia bicara (PTT) di channel booth Auto,
+  relay AI mengalah 4 detik, jadi AI berfungsi sebagai cadangan otomatis.
+- MONITOR INTERPRETER (suara Floor yang didengar penerjemah):
+  a) Di komputer ini: Settings -> Monitor Interpreter -> pilih sumber (Floor/channel) dan Output headphone. Tersimpan per browser.
+  b) Lewat soundcard/USB codec: Settings -> Booth & Auto Relay -> baris "Headphone booth" -> pilih device + nomor Output.
+     Centang "Aktifkan soundcard" di kartu Output Soundcard.
+  Bila Floor Input = Soundcard/mixer, Floor terdengar interpreter walau tombol FLOOR OFF (pendengar tidak ikut dengar).
+  Sumber Mikrofon/Audio komputer butuh FLOOR ON.
+- KONSOL PER BOOTH: buka /console?booth=1 (atau pilih di Settings). Channel terkunci ke booth itu dan sumber booth langsung
+  terdengar. Dari komputer lain, mikrofon browser butuh HTTPS (taruh cert.pem + key.pem di folder app).
+- Mode offline: Indonesia <-> English selalu ada; Arab dan Vietnam ikut terpasang saat build (ExtraLangs di build.ps1, +~100 MB/bahasa,
+  dilewati bila paket Argos-nya tidak tersedia). Suara (TTS) offline memakai suara Windows; bila suara bahasa itu belum terpasang,
+  suara dibacakan browser pendengar. Mandarin/Jepang dst. paling baik dengan mode Gemini (settings.env).
 
 Catatan: update aplikasi cukup build ulang & jalankan installer baru; config.json dan settings.env tidak ditimpa.

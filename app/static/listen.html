@@ -122,16 +122,20 @@ footer b{color:var(--y);font-weight:600}
 
 <script>
 const $=id=>document.getElementById(id);
-const V={ENG:"en-US",IND:"id-ID",CHI:"zh-CN",ARA:"ar-SA",JPN:"ja-JP"};
-const N={FLR:"Floor",ENG:"English",IND:"Indonesia",CHI:"中文",ARA:"العربية",JPN:"日本語"};
-const E={FLR:"Original · suara pembicara",ENG:"English",IND:"Bahasa Indonesia",CHI:"Mandarin Chinese",ARA:"Arabic",JPN:"Japanese"};
-const K=Object.keys(N);
+let V={ENG:"en-US",IND:"id-ID",CHI:"zh-CN",ARA:"ar-SA",JPN:"ja-JP",VIE:"vi-VN"};
+let N={FLR:"Floor",ENG:"English",IND:"Indonesia",CHI:"中文",ARA:"العربية",JPN:"日本語",VIE:"Tiếng Việt"};
+let E={FLR:"Original · suara pembicara",ENG:"English",IND:"Bahasa Indonesia",CHI:"Mandarin Chinese",ARA:"Arabic",JPN:"Japanese",VIE:"Vietnamese"};
+let K=Object.keys(N);
 let ac,gain,ws,nx=0,cur,pk=0,lvl=0,lastPkt=0,vol=.8,muted=false,capOn=true,fs=22;
 const store={get(k,d){try{const v=localStorage.getItem("tst_"+k);return v===null?d:JSON.parse(v)}catch(_){return d}},set(k,v){try{localStorage.setItem("tst_"+k,JSON.stringify(v))}catch(_){}}};
 vol=store.get("vol",.8);capOn=store.get("cap",true);fs=store.get("fs",22);
 
-// channel list
-$("l").innerHTML=K.map((c,i)=>`<button class="ch" data-c="${c}" aria-pressed="false"><span class="n">${i}</span><span class="t"><b dir="auto">${N[c]}</b><small>${E[c]} · ${c}</small></span><span class="eq"><i></i><i></i><i></i></span></button>`).join("");
+// channel list (daftar aktif diambil dari server; yang di atas hanya cadangan)
+function buildList(){$("l").innerHTML=K.map((c,i)=>`<button class="ch" data-c="${c}" aria-pressed="false"><span class="n">${i}</span><span class="t"><b dir="auto">${N[c]}</b><small>${E[c]} · ${c}</small></span><span class="eq"><i></i><i></i><i></i></span></button>`).join("");
+ if(cur)show(cur)}
+buildList();
+fetch("/api/channels").then(r=>r.json()).then(d=>{if(!d.channels||!d.channels.length)return;N={};E={};V={};
+ d.channels.forEach(c=>{N[c.c]=c.n;E[c.c]=c.e;V[c.c]=c.v});K=Object.keys(N);if(cur&&!N[cur])cur=null;buildList()}).catch(()=>{});
 $("l").onclick=e=>{const b=e.target.closest(".ch");if(b)join(b.dataset.c)};
 // VU
 $("vu").innerHTML="<i></i>".repeat(16);const segs=[...$("vu").children];

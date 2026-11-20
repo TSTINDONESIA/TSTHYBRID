@@ -5,6 +5,7 @@ $ProgressPreference = "SilentlyContinue"
 
 $PyVer = "3.12.8"
 $WhisperSize = "small"      # tiny / base / small / medium (makin besar makin akurat & berat)
+$ExtraLangs = "ar,vi"       # model terjemahan offline tambahan English<->bahasa ini (koma; kosong = hanya Indonesia<->English). Tiap bahasa +~100 MB
 $Here = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Out  = Join-Path $Here "build\TAIDEN"
 $Py   = Join-Path $Out "python\python.exe"
@@ -45,31 +46,17 @@ Run $Py -c "import aiohttp, numpy, qrcode, sounddevice, faster_whisper, argostra
 
 # 4. Model offline
 Step "4/6 Mengunduh model suara & terjemahan"
-Run $Py (Join-Path $Here "fetch_models.py") $Out $WhisperSize
+Run $Py (Join-Path $Here "fetch_models.py") $Out $WhisperSize $ExtraLangs
 
 # 5. Aplikasi + launcher
 Step "5/6 Menyalin aplikasi"
 $app = Join-Path $Out "app"
 New-Item -ItemType Directory -Force -Path $app | Out-Null
 Copy-Item (Join-Path $Here "app\*") $app -Recurse -Force
-$launcher = @'
-@echo off
-title TAIDEN Interpreter
-cd /d "%~dp0app"
-set PYTHONUTF8=1
-set PYTHONIOENCODING=utf-8
-set AI_MODE=local
-set SRC_LANG=en
-set WHISPER_MODEL=%~dp0models\whisper-__WHISPER__
-if exist settings.env for /f "usebackq eol=# tokens=1,* delims==" %%a in ("settings.env") do set "%%a=%%b"
-"%~dp0python\python.exe" install_offline.py
-start "" http://localhost:8000/console
-"%~dp0python\python.exe" server.py
-echo.
-echo Server berhenti.
-pause
-'@
-Set-Content (Join-Path $Out "TAIDEN.bat") -Encoding ASCII -Value $launcher.Replace("__WHISPER__", $WhisperSize)
+foreach ($f in "TAIDEN.vbs", "TAIDEN-stop.vbs", "TAIDEN-stop.ps1") { Copy-Item (Join-Path $Here "launcher\$f") (Join-Path $Out $f) -Force }
+# TAIDEN.bat: isi templat, paksa CRLF (cmd bisa error pada label/goto bila file berakhiran LF saja)
+$bat = (Get-Content -Raw (Join-Path $Here "launcher\TAIDEN.bat")).Replace("__WHISPER__", $WhisperSize) -replace "`r?`n", "`r`n"
+[IO.File]::WriteAllText((Join-Path $Out "TAIDEN.bat"), $bat, [Text.Encoding]::ASCII)
 
 # 6. Installer
 Step "6/6 Membuat TAIDEN-Setup.exe"
